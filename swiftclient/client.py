@@ -621,7 +621,7 @@ def post_account(url, token, headers, http_conn=None, response_dict=None):
                               http_response_content=body)
 
 
-def get_container(url, token, container, marker=None, limit=None,
+def get_container(url, token, container, headers=None, marker=None, limit=None,
                   prefix=None, delimiter=None, end_marker=None,
                   path=None, http_conn=None,
                   full_listing=False):
@@ -677,7 +677,9 @@ def get_container(url, token, container, marker=None, limit=None,
         qs += '&end_marker=%s' % quote(end_marker)
     if path:
         qs += '&path=%s' % quote(path)
-    headers = {'X-Auth-Token': token}
+    if not headers:
+        headers = {}
+    headers['X-Auth-Token'] = token
     method = 'GET'
     conn.request(method, '%s?%s' % (cont_path, qs), '', headers)
     resp = conn.getresponse()
@@ -1360,14 +1362,14 @@ class Connection(object):
         """Wrapper for :func:`head_container`"""
         return self._retry(None, head_container, container)
 
-    def get_container(self, container, marker=None, limit=None, prefix=None,
+    def get_container(self, container, headers=None, marker=None, limit=None, prefix=None,
                       delimiter=None, end_marker=None, path=None,
                       full_listing=False):
         """Wrapper for :func:`get_container`"""
         # TODO(unknown): With full_listing=True this will restart the entire
         # listing with each retry. Need to make a better version that just
         # retries where it left off.
-        return self._retry(None, get_container, container, marker=marker,
+        return self._retry(None, get_container, container, headers=headers, marker=marker,
                            limit=limit, prefix=prefix, delimiter=delimiter,
                            end_marker=end_marker, path=path,
                            full_listing=full_listing)
@@ -1432,11 +1434,11 @@ class Connection(object):
         return self._retry(None, post_object, container, obj, headers,
                            response_dict=response_dict)
 
-    def delete_object(self, container, obj, query_string=None,
+    def delete_object(self, container, obj, headers=None, query_string=None,
                       response_dict=None):
         """Wrapper for :func:`delete_object`"""
         return self._retry(None, delete_object, container, obj,
-                           query_string=query_string,
+                           headers=headers, query_string=query_string,
                            response_dict=response_dict)
 
     def get_capabilities(self, url=None):
